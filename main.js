@@ -3,4 +3,9 @@ const yaml = require('js-yaml');
 const fs = require('fs');
 const path = require('path');
 
-class PromotionEngine {}
+class PromotionEngine {
+  constructor() {
+    this.rules = [];
+    this.metrics = [];
+  }
+}
