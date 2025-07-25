@@ -1,0 +1,210 @@
+rules:
+  - id: 'vip_mega_bonus'
+    name: 'VIP Mega Bonus'
+    priority: 100
+    logic: 'AND'
+    conditions:
+      - field: 'level'
+        operator: 'gte'
+        value: 50
+      - field: 'spendTier'
+        operator: 'in'
+        value: ['platinum', 'diamond']
+      - field: 'daysSinceLastPurchase'
+        operator: 'gte'
+        value: 7
+      - field: 'country'
+        operator: 'in'
+        value: ['US', 'UK', 'CA', 'AU']
+    promotion:
+      type: 'bonus_credits'
+      amount: 10000
+      description: 'Exclusive VIP Mega Bonus - 10,000 credits!'
+      validForDays: 7
+      metadata:
+        category: 'vip'
+        source: 'retention'
+    timeWindow:
+      start: '2024-01-01T00:00:00Z'
+      end: '2024-12-31T23:59:59Z'
+
+  - id: 'new_player_welcome'
+    name: 'New Player Welcome Bonus'
+    priority: 90
+    logic: 'AND'
+    conditions:
+      - field: 'level'
+        operator: 'lte'
+        value: 5
+      - field: 'daysSinceRegistration'
+        operator: 'lte'
+        value: 3
+      - field: 'totalSpent'
+        operator: 'lt'
+        value: 10.00
+    promotion:
+      type: 'welcome_package'
+      amount: 1000
+      description: "Welcome to the game! Here's 1,000 credits to get started!"
+      validForDays: 14
+      metadata:
+        category: 'acquisition'
+        source: 'onboarding'
+
+  - id: 'comeback_special'
+    name: 'Comeback Special'
+    priority: 80
+    logic: 'AND'
+    conditions:
+      - field: 'daysSinceLastLogin'
+        operator: 'gte'
+        value: 14
+      - field: 'level'
+        operator: 'gte'
+        value: 10
+      - field: 'totalSpent'
+        operator: 'gte'
+        value: 50.00
+    promotion:
+      type: 'comeback_bonus'
+      amount: 2500
+      description: 'We missed you! Come back with 2,500 bonus credits!'
+      validForDays: 5
+      metadata:
+        category: 'reactivation'
+        source: 'winback'
+
+  - id: 'weekend_warrior'
+    name: 'Weekend Warrior Bonus'
+    priority: 70
+    logic: 'AND'
+    conditions:
+      - field: 'level'
+        operator: 'gte'
+        value: 15
+      - field: 'spendTier'
+        operator: 'in'
+        value: ['silver', 'gold', 'platinum', 'diamond']
+      - field: 'country'
+        operator: 'nin'
+        value: ['CN', 'RU'] # Excluded countries
+    promotion:
+      type: 'weekend_bonus'
+      amount: 1500
+      description: 'Weekend Warrior Bonus - 1,500 credits for active players!'
+      validForDays: 3
+      metadata:
+        category: 'engagement'
+        source: 'weekend_promotion'
+
+  - id: 'big_spender_reward'
+    name: 'Big Spender Reward'
+    priority: 85
+    logic: 'AND'
+    conditions:
+      - field: 'totalSpent'
+        operator: 'gte'
+        value: 500.00
+      - field: 'daysSinceLastPurchase'
+        operator: 'lte'
+        value: 30
+      - field: 'level'
+        operator: 'gte'
+        value: 25
+    promotion:
+      type: 'loyalty_bonus'
+      amount: 5000
+      description: 'Thank you for your loyalty! 5,000 bonus credits!'
+      validForDays: 10
+      metadata:
+        category: 'loyalty'
+        source: 'high_value'
+
+  - id: 'regional_promo_eu'
+    name: 'European Players Special'
+    priority: 60
+    logic: 'AND'
+    conditions:
+      - field: 'country'
+        operator: 'in'
+        value: ['DE', 'FR', 'IT', 'ES', 'NL', 'UK']
+      - field: 'level'
+        operator: 'gte'
+        value: 8
+      - field: 'spendTier'
+        operator: 'neq'
+        value: 'bronze'
+    promotion:
+      type: 'regional_bonus'
+      amount: 750
+      description: 'Special bonus for our European players!'
+      validForDays: 7
+      metadata:
+        category: 'regional'
+        source: 'geo_targeting'
+
+  - id: 'level_milestone'
+    name: 'Level Milestone Reward'
+    priority: 75
+    logic: 'OR'
+    conditions:
+      - field: 'level'
+        operator: 'eq'
+        value: 20
+      - field: 'level'
+        operator: 'eq'
+        value: 30
+      - field: 'level'
+        operator: 'eq'
+        value: 40
+    promotion:
+      type: 'milestone_reward'
+      amount: 2000
+      description: 'Congratulations on reaching a level milestone!'
+      validForDays: 14
+      metadata:
+        category: 'progression'
+        source: 'level_reward'
+
+  - id: 'low_activity_nudge'
+    name: 'Re-engagement Bonus'
+    priority: 50
+    logic: 'AND'
+    conditions:
+      - field: 'daysSinceLastLogin'
+        operator: 'gte'
+        value: 7
+      - field: 'daysSinceLastLogin'
+        operator: 'lt'
+        value: 14
+      - field: 'level'
+        operator: 'gte'
+        value: 5
+      - field: 'totalSpent'
+        operator: 'gt'
+        value: 0
+    promotion:
+      type: 'reengagement_bonus'
+      amount: 500
+      description: "Don't let your streak break! Here's a small bonus to get back in the game."
+      validForDays: 3
+      metadata:
+        category: 'reengagement'
+        source: 'activity_nudge'
+
+  - id: 'default_fallback'
+    name: 'Daily Login Bonus'
+    priority: 10
+    logic: 'AND'
+    conditions:
+      - field: 'level'
+        operator: 'gte'
+        value: 1
+    promotion:
+      type: 'daily_bonus'
+      amount: 100
+      description: 'Daily login bonus - 100 credits!'
+      validForDays: 1
+      metadata:
+        category: 'daily'
+        source: 'fallback'

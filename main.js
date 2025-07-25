@@ -1,4 +1,3 @@
-const express = require('express');
 const yaml = require('js-yaml');
 const fs = require('fs');
 const path = require('path');
@@ -15,6 +14,7 @@ class PromotionEngine {
     };
     this.loadRules();
   }
+
   loadRules() {
     try {
       const rulesPath = path.join(__dirname, 'rules.yaml');
@@ -34,13 +34,14 @@ class PromotionEngine {
     }
   }
 
-  evaluateConditions = () => {
+  evaluateCondition(condition, playerData) {
     const { field, operator, value } = condition;
     const playerValue = this.getNestedValue(playerData, field);
 
     if (playerValue === undefined || playerValue === null) {
       return false;
     }
+
     switch (operator) {
       case 'eq':
         return playerValue === value;
@@ -68,7 +69,7 @@ class PromotionEngine {
         console.warn(`Unknown operator: ${operator}`);
         return false;
     }
-  };
+  }
 
   getNestedValue(obj, path) {
     return path.split('.').reduce((current, key) => current?.[key], obj);
@@ -109,6 +110,7 @@ class PromotionEngine {
     // Future: check if player is in correct bucket for this rule
     return rule;
   }
+
   applyTimeWindows(rule, playerData) {
     // Hook for time-based rule activation
     const now = new Date();
@@ -121,4 +123,102 @@ class PromotionEngine {
 
     return rule;
   }
+
+  selectPromotion(playerData) {
+    const startTime = Date.now();
+    this.metrics.totalEvaluations++;
+
+    try {
+      // Validate required player data
+      if (!this.validatePlayerData(playerData)) {
+        throw new Error('Invalid or missing required player attributes');
+      }
+
+      // Find all eligible rules
+      const eligibleRules = this.rules.filter((rule) => {
+        if (!this.evaluateRule(rule, playerData)) return false;
+
+        // Apply extensibility hooks
+        const afterTimeWindow = this.applyTimeWindows(rule, playerData);
+        if (!afterTimeWindow) return false;
+
+        const afterABTest = this.applyABTesting(afterTimeWindow, playerData);
+        if (!afterABTest) return false;
+
+        return true;
+      });
+
+      // Apply weighted randomness to select final promotion
+      const selectedRule = this.applyWeightedRandomness(
+        eligibleRules,
+        playerData
+      );
+
+      const endTime = Date.now();
+      const latency = endTime - startTime;
+      this.metrics.totalLatency += latency;
+
+      if (selectedRule) {
+        this.metrics.hits++;
+        return {
+          ...selectedRule.promotion,
+          ruleId: selectedRule.id,
+          selectedAt: new Date().toISOString(),
+        };
+      } else {
+        this.metrics.misses++;
+        return null;
+      }
+    } catch (error) {
+      const endTime = Date.now();
+      const latency = endTime - startTime;
+      this.metrics.totalLatency += latency;
+      this.metrics.misses++;
+
+      console.error('Error selecting promotion:', error.message);
+      return null;
+    }
+  }
+
+  validatePlayerData(playerData) {
+    // Basic validation - ensure required fields exist
+    const requiredFields = ['playerId'];
+    return requiredFields.every((field) => playerData[field] !== undefined);
+  }
+
+  getMetrics() {
+    const avgLatency =
+      this.metrics.totalEvaluations > 0
+        ? this.metrics.totalLatency / this.metrics.totalEvaluations
+        : 0;
+
+    return {
+      totalEvaluations: this.metrics.totalEvaluations,
+      hits: this.metrics.hits,
+      misses: this.metrics.misses,
+      hitRate:
+        this.metrics.totalEvaluations > 0
+          ? ((this.metrics.hits / this.metrics.totalEvaluations) * 100).toFixed(
+              2
+            ) + '%'
+          : '0%',
+      averageLatencyMs: Math.round(avgLatency * 100) / 100,
+      totalRules: this.rules.length,
+      lastReload: this.metrics.lastReload,
+    };
+  }
+
+  reloadRules() {
+    const oldRuleCount = this.rules.length;
+    this.loadRules();
+    return {
+      success: true,
+      message: `Rules reloaded successfully. Old count: ${oldRuleCount}, New count: ${this.rules.length}`,
+      timestamp: new Date().toISOString(),
+    };
+  }
 }
+
+module.exports = {
+  PromotionEngine,
+};
