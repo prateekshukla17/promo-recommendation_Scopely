@@ -21,7 +21,6 @@ class PromotionEngine {
       const fileContents = fs.readFileSync(rulesPath, 'utf8');
       const data = yaml.load(fileContents);
 
-      // Sort rules by priority (higher priority first)
       this.rules = data.rules.sort(
         (a, b) => (b.priority || 0) - (a.priority || 0)
       );
